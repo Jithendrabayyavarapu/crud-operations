@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Table</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'bold';
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+            margin: 0;
+        }
+
+        .container {
+            width: 800px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, textarea {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .error-message {
+            color: red;
+            margin-top: 5px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .action-buttons {
+            text-align: center;
+        }
+
+        .action-buttons button {
+            margin-right: 10px;
+        }
+
+        .action-buttons button.edit {
+            background-color: #008CBA;
+        }
+
+        .action-buttons button.delete {
+            background-color: #f44336;
+        }
+
+        .action-buttons button:hover {
+            background-color: #00517C;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" maxlength="50" required placeholder="Enter your Name" onkeydown="return /[a-zA-Z]/i.test(event.key)">
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="text" id="email" name="email" pattern="^[\w\.-]+@xencia\.com$" required placeholder="Enter Email id">
+        </div>
+
+        <div class="form-group">
+            <label for="phoneNumber">Phone Number:</label>
+            <input type="number" id="phoneNumber" name="phoneNumber" pattern="[0-9]{12}" title="Please enter a 12-digit phone number" maxlength="12" placeholder="Enter your Phone Number" onkeydown="return /[0-9]/i.test(event.key)">
+        </div>
+
+        <div class="form-group">
+            <label for="address">Address:</label>
+            <textarea id="address" name="address" rows="4" maxlength="100" required placeholder="Enter your address"></textarea>
+        </div>
+
+        <button type="button" onclick="addToTable()">Add to Table</button>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <table id="table">
+            <thead></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        var firstRowUpdated = false;
+        var currentRow = null;
+
+        function addToTable() {
+            var name = document.getElementById('name').value.trim();
+            var email = document.getElementById('email').value.trim();
+            var phoneNumber = document.getElementById('phoneNumber').value.trim();
+            var address = document.getElementById('address').value.trim();
+
+            var errorMessage = document.getElementById('errorMessage');
+            errorMessage.innerHTML = '';
+
+            if (name === '' || email === '' || phoneNumber === '' || address === '') {
+                errorMessage.innerHTML = 'Error: All fields are required.';
+                return;
+            }
+
+            if (!validateEmail() || !validatePhoneNumber()) {
+                errorMessage.innerHTML = 'Error: Please fix the validation errors.';
+                return;
+            }
+
+            var table = document.getElementById('table');
+            var tbody = document.getElementById('tableBody');
+
+            if (currentRow) {
+                updateRow(currentRow, name, email, phoneNumber, address);
+                currentRow = null;
+                clearForm();
+                return;
+            }
+
+            if (!firstRowUpdated) {
+                var headersRow = table.getElementsByTagName('thead')[0].insertRow(0);
+                var headers = ["S.no", "Name", "Email", "Phone Number", "Address", "Actions"];
+                for (var i = 0; i < headers.length; i++) {
+                    var th = document.createElement('th');
+                    th.textContent = headers[i];
+                    headersRow.appendChild(th);
+                }
+                firstRowUpdated = true;
+            }
+
+            var newRow = tbody.insertRow(tbody.rows.length);
+            var cell1 = newRow.insertCell(0);
+            var cell2 = newRow.insertCell(1);
+            var cell3 = newRow.insertCell(2);
+            var cell4 = newRow.insertCell(3);
+            var cell5 = newRow.insertCell(4);
+            var cell6 = newRow.insertCell(5);
+
+            cell1.textContent = tbody.rows.length;
+            cell2.textContent = name;
+            cell3.textContent = email;
+            cell4.textContent = phoneNumber;
+            cell5.textContent = address;
+
+            var editButton = createButton('Edit', function () {
+                editRow(newRow);
+            }, 'edit');
+            cell6.appendChild(editButton);
+
+            var deleteButton = createButton('Delete', function () {
+                deleteRow(newRow);
+            }, 'delete');
+            cell6.appendChild(deleteButton);
+        }
+
+        function createButton(text, onclick, className) {
+            var button = document.createElement('button');
+            button.textContent = text;
+            button.onclick = onclick;
+            button.className = className || '';
+            return button;
+        }
+
+        function updateRow(row, name, email, phoneNumber, address) {
+            row.cells[1].textContent = name;
+            row.cells[2].textContent = email;
+            row.cells[3].textContent = phoneNumber;
+            row.cells[4].textContent = address;
+        }
+
+        function deleteRow(row) {
+            row.parentNode.removeChild(row);
+        }
+
+        function editRow(row) {
+            document.getElementById('name').value = row.cells[1].textContent;
+            document.getElementById('email').value = row.cells[2].textContent;
+            document.getElementById('phoneNumber').value = row.cells[3].textContent;
+            document.getElementById('address').value = row.cells[4].textContent;
+
+            currentRow = row;
+        }
+
+        function validateEmail() {
+            var emailInput = document.getElementById('email');
+            var email = emailInput.value.trim();
+            var regex = /^[\w\.-]+@xencia\.com$/;
+
+            if (!regex.test(email)) {
+                emailInput.setCustomValidity('Please enter a valid email ending with @xencia.com.');
+                return false;
+            } else {
+                emailInput.setCustomValidity('');
+                return true;
+            }
+        }
+
+        function validatePhoneNumber() {
+            var phoneNumberInput = document.getElementById('phoneNumber');
+            var phoneNumber = phoneNumberInput.value.trim();
+            var regex = /^[0-9]{12}$/;
+
+            if (!regex.test(phoneNumber)) {
+                phoneNumberInput.setCustomValidity('Please enter a 12-digit phone number.');
+                return false;
+            } else {
+                phoneNumberInput.setCustomValidity('');
+                return true;
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('name').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('phoneNumber').value = '';
+            document.getElementById('address').value = '';
+        }
+    </script>
+</body>
+</html>
